@@ -1,0 +1,48 @@
+# 本模板默认不自动跑任何东西：唯一的触发器是 workflow_dispatch，也就是在仓库的
+# Actions 页面手动点一次才会运行。模板仓库不是线上站点，push 上去不应该触发构建、
+# 通知或其他副作用。
+#
+# 想启用自动 CI：删掉下面的 `workflow_dispatch:`，再把这段注释里的 on: 块取消注释。
+# on:
+#   push:
+#     branches: [main]
+#   pull_request:
+
+name: CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "ci-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.x
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bunx nuxi typecheck
+
+      - name: Build
+        run: bun run build

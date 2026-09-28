@@ -1,0 +1,22 @@
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Markdown 行尾的两个空格是硬换行，删掉会改变渲染结果
+[*.md]
+trim_trailing_whitespace = false
+
+# GitHub 的 workflow / issue 表单 / dependabot 都是 2 空格缩进
+[*.{yml,yaml}]
+indent_size = 2
+
+# 锁文件交给包管理器写，不要手动格式化
+[bun.lock]
+insert_final_newline = true

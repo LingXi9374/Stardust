@@ -1,0 +1,19 @@
+# 仓库里一律存 LF，检出也一律 LF（与 .editorconfig 的 end_of_line = lf 一致）
+* text=auto eol=lf
+
+# 图片与字体是二进制，不要让 Git 猜
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# 锁文件由 Bun 生成，不计入语言统计
+bun.lock linguist-generated=true
+
+# 构建期生成的媒体产物（已在 .gitignore 里排除，这里防止误加时污染统计）
+public/media/** linguist-generated=true

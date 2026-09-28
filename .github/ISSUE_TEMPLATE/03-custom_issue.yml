@@ -1,0 +1,57 @@
+name: 其它问题
+description: 使用提问、文档纠错、设计讨论，或套不上上面两个模板的情况
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先确认一下该往哪走：
+
+        - 是 bug → 用「Bug 报告」
+        - 是安全漏洞 → 不要发公开 issue，走 GitHub Security Advisory，见 `SECURITY.md`
+        - 是「我想改成别的样子」的个人改造 → 那属于 fork 之后的事，先看 README，以及
+          `app/app.config.ts`（站点内容）与 `blog.config.ts`（构建期开关）里的注释
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 类型
+      options:
+        - 使用提问
+        - 文档有误或讲得不清楚
+        - 设计或实现讨论
+        - 其它
+    validations:
+      required: true
+
+  - type: input
+    id: subject
+    attributes:
+      label: 一句话概括
+      placeholder: README 里质量换算表的说明前后对不上
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: 详细内容
+      description: 提问请写清已经试过什么、看到什么；文档纠错请给出文件与大致位置。
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 相关版本
+      description: 与代码行为有关时再填。
+      placeholder: Nuxt 4.5.2 / Bun 1.4.2 / main 上某个提交
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充材料
+      description: 截图、日志、链接。
+    validations:
+      required: false

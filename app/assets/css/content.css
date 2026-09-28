@@ -1,0 +1,1111 @@
+/* ══════════════════════════════════════════════════════════════════════
+   文章渲染扩展：代码块、提醒框、图表、标签页…
+
+   由 main.css 顶部 @import 引入。所有颜色取自锁定色板派生的令牌，
+   唯一例外是终端窗口的三个圆点（见 .cb-dots 的说明）。
+   ══════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* ────────────────────────────────────────────────────────────────
+     代码块
+     ──────────────────────────────────────────────────────────────── */
+  .cb {
+    margin: 0;
+    border: 1px solid var(--color-line);
+    border-radius: 0.875rem;
+    background-color: var(--color-card);
+    overflow: hidden;
+  }
+
+  .cb-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  /* 终端窗口的红黄绿。这是全站唯一一处色板外的颜色——mac 终端框架的识别性
+     就来自这三个点。想让它跟随色板，把 blog.config.ts 里的
+     codeBlocks.terminalDots 改成 'palette'。 */
+  .cb[data-frame='terminal'] .cb-dots {
+    display: inline-flex;
+    gap: 0.4rem;
+    flex: none;
+  }
+
+  .cb[data-frame='terminal'] .cb-dots i {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 9999px;
+    background-color: var(--color-accent);
+  }
+
+  .cb[data-terminal-dots='classic'][data-frame='terminal'] .cb-dots i:nth-child(1) {
+    background-color: #ff5f57;
+  }
+
+  .cb[data-terminal-dots='classic'][data-frame='terminal'] .cb-dots i:nth-child(2) {
+    background-color: #febc2e;
+  }
+
+  .cb[data-terminal-dots='classic'][data-frame='terminal'] .cb-dots i:nth-child(3) {
+    background-color: #28c840;
+  }
+
+  .cb-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-ink-soft);
+  }
+
+  .cb-name--empty {
+    flex: 1;
+  }
+
+  .cb-lang {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
+
+  .cb-copy {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 0.4rem;
+    color: var(--color-ink-soft);
+    transition: color 150ms ease, background-color 150ms ease;
+  }
+
+  .cb-copy:hover {
+    background-color: var(--color-card-hover);
+    color: var(--color-ink-strong);
+  }
+
+  .cb-copy svg {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .cb-copy .cb-copy-done {
+    display: none;
+    color: var(--color-accent-deep);
+  }
+
+  .cb-copy[data-copied] svg {
+    display: none;
+  }
+
+  .cb-copy[data-copied] .cb-copy-done {
+    display: block;
+  }
+
+  /* 水平滚动与键盘聚焦（AGENTS.md 4.6）：滚动容器本身可聚焦，
+     这样键盘用户也能横向查看被裁掉的长行。 */
+  .cb-body {
+    overflow-x: auto;
+    padding: 0.75rem 0;
+    tab-size: 2;
+  }
+
+  .cb-body:focus-visible {
+    outline-offset: 0;
+  }
+
+  .cb-lines {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    /* 没有配色的普通文本跟随正文色，天然与锁定色板一致 */
+    color: var(--color-ink);
+  }
+
+  /* ── 双主题语法高亮 ──
+     渲染时每个 token 只输出 --shiki-light / --shiki-dark 两个自定义属性，
+     由这里按模式选用。这样不需要 !important，也不会出现「暗色模式下仍在用
+     亮色 token 颜色」那种看不见字的情况。
+     两套配色的色相关系见 server/utils/markdown/theme.ts。 */
+  .cl-c span {
+    color: var(--shiki-light);
+  }
+
+  .dark .cl-c span {
+    color: var(--shiki-dark);
+  }
+
+  /* 每行自成 flex 容器，行号栏固定宽度：
+     这样把某几行包进 <details> 也不会让列错位。 */
+  .cl {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .cl-n {
+    flex: none;
+    width: var(--cb-gutter, 3.25rem);
+    padding-right: 0.85rem;
+    text-align: right;
+    color: var(--color-ink-soft);
+    opacity: 0.65;
+    user-select: none;
+  }
+
+  .cl-c {
+    flex: 1;
+    white-space: pre;
+    padding-right: 1rem;
+    position: relative;
+  }
+
+  .cb[data-numbers='false'] .cl-n {
+    width: 1rem;
+  }
+
+  .cb[data-wrap='true'] .cl {
+    width: auto;
+  }
+
+  .cb[data-wrap='true'] .cl-c {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── 行标记 ── */
+  .cl[data-mark='mark'] {
+    background-color: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  }
+
+  .cl[data-mark='ins'] {
+    background-color: color-mix(in srgb, var(--color-accent) 26%, transparent);
+    box-shadow: inset 2px 0 0 var(--color-accent-deep);
+  }
+
+  .cl[data-mark='del'] {
+    background-color: color-mix(in srgb, var(--color-ink-soft) 14%, transparent);
+    box-shadow: inset 2px 0 0 var(--color-ink-soft);
+  }
+
+  .cl-tags {
+    position: absolute;
+    right: 0.6rem;
+    top: 0;
+    display: inline-flex;
+    gap: 0.35rem;
+  }
+
+  .cl-tag {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    line-height: 1.7;
+    padding: 0 0.45rem;
+    border-radius: 9999px;
+    background-color: var(--color-accent);
+    color: #0b2b33;
+    white-space: nowrap;
+  }
+
+  /* ── 折叠 ── */
+  .cb-fold {
+    border-top: 1px dashed var(--color-line);
+    border-bottom: 1px dashed var(--color-line);
+    background-color: color-mix(in srgb, var(--color-sidebar) 45%, transparent);
+  }
+
+  .cb-fold + .cb-fold {
+    border-top: 0;
+  }
+
+  .cb-fold-sum {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.85rem;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    color: var(--color-ink-soft);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .cb-fold-sum::-webkit-details-marker {
+    display: none;
+  }
+
+  .cb-fold-sum:hover {
+    color: var(--color-ink-strong);
+  }
+
+  .cb-fold-hint {
+    transition: transform 180ms ease;
+  }
+
+  .cb-fold[open] .cb-fold-hint {
+    transform: rotate(180deg);
+  }
+
+  .cb-fold-body {
+    border-top: 1px dashed var(--color-line);
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     代码块标签页
+     ──────────────────────────────────────────────────────────────── */
+  .cg {
+    position: relative;
+    border: 1px solid var(--color-line);
+    border-radius: 0.875rem;
+    overflow: hidden;
+    background-color: var(--color-card);
+  }
+
+  .cg-radio {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .cg-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  /* 标签栏落进代码窗口的标题栏时（data-tabs="bar"），去掉它自己那行外框，
+     交给 .cb-bar 的 flex 把它排在圆点之后、语言角标之前。 */
+  .cb-bar .cg-tabs {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border-bottom: 0;
+    gap: 0.15rem;
+  }
+
+  .cb-bar .cg-tab {
+    padding: 0.15rem 0.55rem;
+    font-size: 0.75rem;
+  }
+
+  .cg-tab {
+    padding: 0.25rem 0.7rem;
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--color-ink-soft);
+    cursor: pointer;
+  }
+
+  .cg-tab:hover {
+    background-color: var(--color-card-hover);
+    color: var(--color-ink-strong);
+  }
+
+  .cg-panel {
+    display: none;
+  }
+
+  .cg-panel .cb {
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+  }
+
+  /* 纯 CSS 的标签切换：radio 的 :checked 配 nth-of-type。
+     最多支持 8 个标签（再多就要写更多选择器），够用且无需 JavaScript——
+     也意味着首屏不会出现"所有面板同时可见"的闪烁。 */
+  .cg > .cg-radio:nth-of-type(1):checked ~ * .cg-tab:nth-child(1),
+  .cg > .cg-radio:nth-of-type(2):checked ~ * .cg-tab:nth-child(2),
+  .cg > .cg-radio:nth-of-type(3):checked ~ * .cg-tab:nth-child(3),
+  .cg > .cg-radio:nth-of-type(4):checked ~ * .cg-tab:nth-child(4),
+  .cg > .cg-radio:nth-of-type(5):checked ~ * .cg-tab:nth-child(5),
+  .cg > .cg-radio:nth-of-type(6):checked ~ * .cg-tab:nth-child(6),
+  .cg > .cg-radio:nth-of-type(7):checked ~ * .cg-tab:nth-child(7),
+  .cg > .cg-radio:nth-of-type(8):checked ~ * .cg-tab:nth-child(8) {
+    background-color: var(--color-accent);
+    color: #0b2b33;
+    font-weight: 500;
+  }
+
+  .cg > .cg-radio:nth-of-type(1):checked ~ .cg-panels > .cg-panel:nth-child(1),
+  .cg > .cg-radio:nth-of-type(2):checked ~ .cg-panels > .cg-panel:nth-child(2),
+  .cg > .cg-radio:nth-of-type(3):checked ~ .cg-panels > .cg-panel:nth-child(3),
+  .cg > .cg-radio:nth-of-type(4):checked ~ .cg-panels > .cg-panel:nth-child(4),
+  .cg > .cg-radio:nth-of-type(5):checked ~ .cg-panels > .cg-panel:nth-child(5),
+  .cg > .cg-radio:nth-of-type(6):checked ~ .cg-panels > .cg-panel:nth-child(6),
+  .cg > .cg-radio:nth-of-type(7):checked ~ .cg-panels > .cg-panel:nth-child(7),
+  .cg > .cg-radio:nth-of-type(8):checked ~ .cg-panels > .cg-panel:nth-child(8) {
+    display: block;
+  }
+
+  /* 键盘聚焦时把焦点环画在对应的标签上 */
+  .cg > .cg-radio:nth-of-type(1):focus-visible ~ * .cg-tab:nth-child(1),
+  .cg > .cg-radio:nth-of-type(2):focus-visible ~ * .cg-tab:nth-child(2),
+  .cg > .cg-radio:nth-of-type(3):focus-visible ~ * .cg-tab:nth-child(3),
+  .cg > .cg-radio:nth-of-type(4):focus-visible ~ * .cg-tab:nth-child(4),
+  .cg > .cg-radio:nth-of-type(5):focus-visible ~ * .cg-tab:nth-child(5),
+  .cg > .cg-radio:nth-of-type(6):focus-visible ~ * .cg-tab:nth-child(6),
+  .cg > .cg-radio:nth-of-type(7):focus-visible ~ * .cg-tab:nth-child(7),
+  .cg > .cg-radio:nth-of-type(8):focus-visible ~ * .cg-tab:nth-child(8) {
+    outline: 2px solid var(--color-accent-deep);
+    outline-offset: 2px;
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     提醒框
+     ──────────────────────────────────────────────────────────────── */
+  .adm {
+    border: 1px solid var(--color-line);
+    border-left: 3px solid var(--color-accent);
+    border-radius: 0.75rem;
+    background-color: color-mix(in srgb, var(--color-card) 70%, transparent);
+    padding: 0.85rem 1rem;
+  }
+
+  .adm-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-weight: 600;
+    color: var(--color-ink-strong);
+  }
+
+  .adm-icon {
+    display: inline-flex;
+    flex: none;
+    color: var(--color-accent-deep);
+  }
+
+  .adm-icon svg {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+
+  .adm-body > * + * {
+    margin-top: 0.7em;
+  }
+
+  .adm-body > :first-child {
+    margin-top: 0.6em;
+  }
+
+  /* 默认只用描边粗细与图标区分轻重，不引入色板外的颜色。
+     开启 blog.config.ts 的 admonitionsColorful 后才有语义色。 */
+  .adm--important,
+  .adm--warning,
+  .adm--caution,
+  .adm--danger,
+  .adm--failure {
+    border-left-width: 4px;
+  }
+
+  .adm--colorful.adm--tip {
+    border-left-color: #3f9e6a;
+  }
+
+  .adm--colorful.adm--tip .adm-icon {
+    color: #3f9e6a;
+  }
+
+  .adm--colorful.adm--important {
+    border-left-color: #7a5bd6;
+  }
+
+  .adm--colorful.adm--important .adm-icon {
+    color: #7a5bd6;
+  }
+
+  .adm--colorful.adm--warning {
+    border-left-color: #d19a2f;
+  }
+
+  .adm--colorful.adm--warning .adm-icon {
+    color: #d19a2f;
+  }
+
+  .adm--colorful.adm--caution,
+  .adm--colorful.adm--danger,
+  .adm--colorful.adm--failure {
+    border-left-color: #cf5a5a;
+  }
+
+  .adm--colorful.adm--caution .adm-icon,
+  .adm--colorful.adm--danger .adm-icon,
+  .adm--colorful.adm--failure .adm-icon {
+    color: #cf5a5a;
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     剧透
+     ──────────────────────────────────────────────────────────────── */
+  .spoiler {
+    background-color: var(--color-card);
+    border-radius: 0.35rem;
+    padding: 0 0.25rem;
+    cursor: pointer;
+  }
+
+  .spoiler-inner {
+    filter: blur(0.28em);
+    transition: filter 200ms ease;
+  }
+
+  .spoiler:hover .spoiler-inner,
+  .spoiler:focus-visible .spoiler-inner,
+  .spoiler[data-open] .spoiler-inner {
+    filter: none;
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     图片网格
+     ──────────────────────────────────────────────────────────────── */
+  .img-grid {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  }
+
+  /* Markdown 会把图片包进 <p>，用 display:contents 让图片直接成为网格项 */
+  .img-grid > p {
+    display: contents;
+  }
+
+  .img-grid img {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 0.75rem;
+    margin: 0;
+  }
+
+  .img-grid:has(> p:nth-child(2):last-child) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .img-grid:has(> p:nth-child(3):last-child) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .img-grid:has(> p:nth-child(4):last-child) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     GitHub 仓库卡片
+     ──────────────────────────────────────────────────────────────── */
+  .gh-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.875rem;
+    background-color: var(--color-card);
+    text-decoration: none;
+    transition: background-color 150ms ease;
+  }
+
+  .gh-card:hover {
+    background-color: var(--color-card-hover);
+  }
+
+  .gh-icon {
+    flex: none;
+    display: inline-flex;
+    color: var(--color-accent-deep);
+    margin-top: 0.15rem;
+  }
+
+  .gh-icon svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .gh-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .gh-name {
+    font-weight: 600;
+    color: var(--color-ink-strong);
+    overflow-wrap: anywhere;
+  }
+
+  .gh-desc {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-ink-soft);
+  }
+
+  .gh-meta {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--color-ink-soft);
+  }
+
+  .gh-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .gh-stat svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     图表画板
+
+     所有图表统一住在 4:3 的圆角画板里。不这么做的话，甘特图那种狭长的
+     输出会把版面切出一道很扁的横条，文字挤到看不清；固定画板至少让
+     不同图表在同一套版式里，剩下的交给下面的缩放与全屏。
+     ──────────────────────────────────────────────────────────────── */
+  .dg {
+    position: relative;
+    margin: 0;
+    border: 1px solid var(--color-line);
+    border-radius: 0.875rem;
+    background-color: var(--color-card);
+    overflow: hidden;
+  }
+
+  /* 4:3 只给真的画得出图的画板。PlantUML 被关掉或出错时 .dg--off 里
+     只有一段源码，套上固定比例会变成一个大空盒子。 */
+  .dg:not(.dg--off) {
+    aspect-ratio: 4 / 3;
+  }
+
+  .dg-canvas {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    /* 缩放与平移完全由 transform 表达，超出部分裁掉即可，不靠滚动 */
+    overflow: hidden;
+  }
+
+  /*
+    图表本体。
+
+    1× 时靠 max-width/max-height: 100% 装进画板并居中；
+    放大与平移都交给 transform：
+      - scale 以元素中心为原点，放大是从中心向四周展开（不是往左上角跑）
+      - translate 就是拖动所需要的量，与 scale 共用同一组变量
+    translate 写在 scale 前面，位移量就是屏幕像素，拖动跟手。
+
+    内联 <svg> 由 preserveAspectRatio（默认 xMidYMid meet）做等比留白，
+    <img> 由 object-fit: contain 做同样的事。
+  */
+  .dg-canvas > svg,
+  .dg--plantuml > img {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: translate(var(--dg-x, 0px), var(--dg-y, 0px)) scale(var(--dg-zoom, 1));
+    transform-origin: center center;
+  }
+
+  /* 放大后才可拖动，光标也只在此时变成抓手 */
+  .dg[data-zoomed] .dg-canvas,
+  .dg[data-zoomed].dg--plantuml {
+    cursor: grab;
+    /* 拖动时不要让浏览器抢去做页面滚动 */
+    touch-action: none;
+  }
+
+  .dg[data-dragging] .dg-canvas,
+  .dg[data-dragging].dg--plantuml {
+    cursor: grabbing;
+  }
+
+  .dg[data-dragging] .dg-tools {
+    opacity: 0.35;
+  }
+
+  .dg-fallback {
+    padding: 0.9rem 1rem;
+  }
+
+  .dg-hint {
+    margin: 0 0 0.6rem;
+    font-size: 0.8125rem;
+    color: var(--color-ink-soft);
+  }
+
+  .dg-source {
+    overflow-x: auto;
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+  }
+
+  /* PlantUML 直接产出 <img>，没有 .dg-canvas 那一层，所以它自己承担居中。
+
+     这里必须是 flex，不能是 grid。grid 行是 auto 尺寸时，子项的 height:100%
+     与行高互相依赖，属于循环百分比，按规范退化成 auto——结果只剩 width:100%
+     生效，图被拉满画板宽度、高度按比例溢出，看起来就是「撑爆并裁切」。
+     flex 容器在有确定高度时子项百分比高度可正常解析，没有这个循环。 */
+  .dg--plantuml {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow: hidden;
+  }
+
+  /* 全屏时图表被搬走，原位留一个虚线空槽。
+     不留的话那块版面会直接塌掉，看起来就像图表「消失」了。 */
+  .dg--slot {
+    border-style: dashed;
+    background-color: transparent;
+    opacity: 0.45;
+  }
+
+  /* ── 工具条 ── */
+  .dg-tools {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    z-index: 2;
+    display: flex;
+    gap: 0.3rem;
+    padding: 0.2rem;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    background-color: var(--color-canvas);
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+  /* 悬停或键盘进入画板时才显形，平时不打扰阅读 */
+  .dg:hover .dg-tools,
+  .dg:focus-within .dg-tools {
+    opacity: 1;
+  }
+
+  .dg-btn,
+  .dg-close {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 0;
+    border-radius: 999px;
+    background-color: transparent;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+
+  .dg-btn svg,
+  .dg-close svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .dg-btn:hover:not(:disabled),
+  .dg-close:hover {
+    background-color: var(--color-accent);
+    color: #0b2b33;
+  }
+
+  .dg-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .dg-btn:focus-visible,
+  .dg-close:focus-visible {
+    outline: 2px solid var(--color-accent-deep);
+    outline-offset: 2px;
+  }
+
+  /* 关闭按钮只在全屏时出现；即便工具条整体透明，它也必须可见 */
+  .dg-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    z-index: 3;
+    display: none;
+    border: 1px solid var(--color-line);
+    background-color: var(--color-canvas);
+  }
+
+  /* ── 全屏舞台 ──
+     图表会被搬进这个挂在 <body> 上的固定层，而不是给 .dg 自己加
+     position: fixed。正文是 v-html 注入的内容，固定定位的包含块未必是视口，
+     之前那样写的结果是图表从原位消失、却没有铺满屏幕。
+     搬到 body 之后，固定定位一定以视口为基准。 */
+  .dg-stage {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: none;
+    background-color: rgb(0 0 0 / 0.86);
+  }
+
+  .dg-stage[data-open] {
+    display: block;
+  }
+
+  /* 被搬进来的画板铺满整层，边框与圆角交给舞台承担 */
+  .dg-stage .dg {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+  }
+
+  .dg-stage .dg-canvas,
+  .dg-stage .dg--plantuml {
+    padding: 3.5rem 1.5rem 1.5rem;
+  }
+
+  .dg-stage .dg-tools {
+    opacity: 1;
+    top: 1rem;
+    right: 3.6rem;
+  }
+
+  /* 舞台是暗底，控件要换成浅色的，否则深色模式下按钮会糊在背景里 */
+  .dg-stage .dg-tools,
+  .dg-stage .dg-close {
+    border-color: transparent;
+    background-color: rgb(255 255 255 / 0.14);
+  }
+
+  .dg-stage .dg-btn,
+  .dg-stage .dg-close {
+    color: #fff;
+  }
+
+  .dg-stage .dg-btn:hover:not(:disabled),
+  .dg-stage .dg-close:hover {
+    background-color: rgb(255 255 255 / 0.26);
+    color: #fff;
+  }
+
+  .dg-stage .dg-close {
+    display: grid;
+    top: 1rem;
+    right: 1rem;
+  }
+
+  .dg-stage .dg-fallback {
+    max-height: 100%;
+    overflow: auto;
+    color: #eaf7fa;
+  }
+
+  html[data-diagram-fullscreen] {
+    overflow: hidden;
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     折叠区块与兜底容器
+     ──────────────────────────────────────────────────────────────── */
+  .md-details {
+    border: 1px solid var(--color-line);
+    border-radius: 0.75rem;
+    background-color: var(--color-card);
+    padding: 0.7rem 1rem;
+  }
+
+  .md-details > summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--color-ink-strong);
+  }
+
+  .md-details-body > * + * {
+    margin-top: 0.8em;
+  }
+
+  .md-box {
+    border-left: 3px solid var(--color-line);
+    padding-left: 1rem;
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     键盘按键
+     ──────────────────────────────────────────────────────────────── */
+  .reading-column kbd {
+    display: inline-block;
+    padding: 0.05em 0.4em;
+    border: 1px solid var(--color-line);
+    border-bottom-width: 2px;
+    border-radius: 0.35rem;
+    background-color: var(--color-card);
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    line-height: 1.5;
+    color: var(--color-ink-strong);
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     KaTeX：宽公式要能横向滚动，否则会把阅读列撑破
+     ──────────────────────────────────────────────────────────────── */
+  .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.35rem 0;
+  }
+
+  .katex {
+    font-size: 1.05em;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   照片查看器
+
+   与图表查看器分开实现：照片是「多张之间切换」，图表是「单张缩放平移」。
+   两者都挂在 <body> 上（Teleport），所以不放在 components 层里跟阅读列绑定。
+   ══════════════════════════════════════════════════════════════════════ */
+.pv {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  /* 有透明度的黑底：背后的页面还看得见一点，读者不会失去位置感 */
+  background-color: rgb(0 0 0 / 0.88);
+}
+
+/* 底栏藏起来后不要再留一行空轨道，否则图片会被顶上去一截 */
+.pv--no-strip {
+  grid-template-rows: 1fr;
+}
+
+.pv-stage {
+  display: grid;
+  /* minmax(0, 1fr)：图片那一行才真的会被压缩，max-height:100% 也才有意义 */
+  grid-template-rows: minmax(0, 1fr) auto;
+  place-items: center;
+  gap: 0.75rem;
+  min-height: 0;
+  margin: 0;
+  padding: 3.5rem 4.5rem 1rem;
+  /* 放大后的图不能溢出到工具条和底栏上 */
+  overflow: hidden;
+}
+
+/*
+  缩放与平移统一用 transform 表达，与图表查看器同一套做法。
+
+  为什么不用 max-width/height 或 width/height 去「放大」：
+    - max-* 只是抬高上限，图本来就比上限小，点了没有任何反应；
+    - width/height 按倍数设定虽然能变大，但长大的方向由容器排布决定，会往左上角跑。
+  transform 一次解决两件事：scale 以元素中心为原点，放大从中心向四周展开；
+  translate 恰好就是拖动需要的那个量，两者共用同一组变量。
+
+  1× 时仍靠 max-width/max-height 装进画布并居中，transform 是叠加在它之上的。
+*/
+.pv-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  border-radius: 0.5rem;
+  object-fit: contain;
+  transform: translate(var(--pv-x, 0px), var(--pv-y, 0px)) scale(var(--pv-zoom, 1));
+  transform-origin: center center;
+}
+
+/* 放大后才可拖动，光标也只在此时变成抓手 */
+.pv[data-zoomed] .pv-stage img {
+  cursor: grab;
+  /* 拖动时不要让浏览器抢去做页面滚动 */
+  touch-action: none;
+}
+
+.pv[data-dragging] .pv-stage img {
+  cursor: grabbing;
+}
+
+.pv[data-dragging] .pv-tools {
+  opacity: 0.35;
+}
+
+.pv-caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.75rem;
+  max-width: 60ch;
+  font-size: 0.8125rem;
+  color: rgb(255 255 255 / 0.72);
+  text-align: center;
+}
+
+.pv-count {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: rgb(255 255 255 / 0.55);
+}
+
+/* 工具条：右上角一排，关闭按钮在最右 */
+.pv-tools {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pv-btn {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 999px;
+  background-color: rgb(255 255 255 / 0.14);
+  color: #fff;
+  cursor: pointer;
+}
+
+.pv-btn svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.pv-btn:hover:not(:disabled) {
+  background-color: rgb(255 255 255 / 0.26);
+}
+
+/* 缩放到顶/到底、未缩放时，按钮明确置灰 */
+.pv-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* 已开启的功能给一个明确的选中态，否则这么多圆形按钮看不出谁在工作 */
+.pv-btn.is-on {
+  background-color: var(--color-accent);
+  color: #0b2b33;
+}
+
+.pv-nav {
+  position: fixed;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 999px;
+  background-color: rgb(255 255 255 / 0.14);
+  color: #fff;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.pv-nav svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.pv-nav:hover {
+  background-color: rgb(255 255 255 / 0.26);
+}
+
+.pv-nav--prev {
+  left: 1rem;
+}
+
+.pv-nav--next {
+  right: 1rem;
+}
+
+.pv-btn:focus-visible,
+.pv-nav:focus-visible,
+.pv-thumb:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* 底部整排缩略图。居中：张数少时不该靠左挂在角上 */
+.pv-strip {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.pv-thumb {
+  flex: 0 0 auto;
+  width: 3.5rem;
+  height: 3.5rem;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  background-color: rgb(255 255 255 / 0.08);
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.pv-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pv-thumb:hover {
+  opacity: 0.85;
+}
+
+.pv-thumb.is-active {
+  border-color: var(--color-accent);
+  opacity: 1;
+}
+
+html[data-photo-viewer] {
+  overflow: hidden;
+}
+
+/* 极轻微的淡入（AGENTS.md 4.7：内容页避免动画） */
+.pv-enter-active,
+.pv-leave-active {
+  transition: opacity 160ms ease;
+}
+
+.pv-enter-from,
+.pv-leave-to {
+  opacity: 0;
+}

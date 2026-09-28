@@ -1,0 +1,45 @@
+{
+  "name": "stardust",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "阅读优先的简洁风博客网页模板（Nuxt 4 + Tailwind CSS 4）",
+  "engines": {
+    "node": "^22.19.0 || ^24.11.0"
+  },
+  "packageManager": "bun@1.4.2",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^7.3.1",
+    "@fortawesome/free-brands-svg-icons": "^7.3.1",
+    "@fortawesome/free-solid-svg-icons": "^7.3.1",
+    "@fortawesome/vue-fontawesome": "^3.3.3",
+    "@vscode/markdown-it-katex": "^1.1.2",
+    "katex": "^0.18.7",
+    "markdown-it": "^15.0.2",
+    "mermaid": "^12.0.0",
+    "nuxt": "^4.5.2",
+    "plantuml-encoder": "^1.4.0",
+    "shiki": "^4.4.3",
+    "vue": "^3.5.43",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@nuxt/kit": "^4.5.2",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.6",
+    "@types/plantuml-encoder": "^1.4.2",
+    "sharp": "^0.35.4",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0",
+    "vue-tsc": "^3.3.11"
+  }
+}

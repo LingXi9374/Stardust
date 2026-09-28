@@ -1,0 +1,81 @@
+name: 功能建议
+description: 希望模板支持的新能力或改进
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这个仓库是**模板**，不是某个人的博客站点。能帮到所有使用者的能力适合提在这里；
+        只服务于你自己站点的需求（换配色、写文案、加栏目）更适合 fork 之后自己改。
+
+        提之前先翻一下 `AGENTS.md` 第 4 节的设计系统约束。建议如果和那几条硬性参数冲突，
+        请说明理由，否则很难进。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你想解决什么问题
+      description: 先写场景和痛点，比直接写「加个 XX 功能」有用得多。
+      placeholder: 我写……的时候，模板现在只能……，结果……
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的做法
+      description: 你希望模板怎么表现。涉及界面就说清放在哪、点了会怎样。
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+      description: 现在是怎么绕过去的？已有的配置项能不能凑合？
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及哪一块
+      multiple: true
+      options:
+        - 排版与设计令牌
+        - 代码块与 Markdown 扩展
+        - 公式与图表
+        - 图片管线
+        - 照片查看器 / 图表查看器
+        - 合集、标签与文章列表
+        - 相册
+        - 内容 API 与 RSS
+        - 无障碍
+        - SEO
+        - 构建、配置与开发体验
+        - 文档
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: 对已有使用者的影响
+      options:
+        - 纯新增，不影响现有行为
+        - 会改默认行为，但可以用配置关掉
+        - 会破坏已有配置或内容格式
+        - 不确定
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前自查
+      options:
+        - label: 搜索过已有 issue 与 PR，没有重复
+        - label: 这个需求对用模板的其他人也成立，不只是对我自己的站点
+        - label: 读过 AGENTS.md 第 4 节，建议与现有设计约束不冲突（若冲突，已在上面说明理由）
+        - label: 我愿意自己实现并提 PR

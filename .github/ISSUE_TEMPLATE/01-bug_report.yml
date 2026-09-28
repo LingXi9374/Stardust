@@ -1,0 +1,133 @@
+name: Bug 报告
+description: 模板的某处行为不对、报错或显示异常
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请先确认问题能在最新的 `main` 上复现，并且跑过 `bun install --frozen-lockfile`。
+
+        复现步骤、环境版本、报错信息这三样缺一样，问题基本没法定位。能把范围缩到「一段 Markdown + 一个配置项」最好。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述
+      description: 发生了什么，你期望发生什么。
+      placeholder: 打开文章页时，代码块的行号……（写现象，别只写「有 bug」）
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      description: 从一个干净的仓库开始，一步一步写下来。
+      placeholder: |
+        1. bun install && bun run dev
+        2. 打开 /posts/xxx
+        3. 点击图片
+        4. 看到……
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 在哪个环境复现
+      description: 开发服务器和构建产物的行为可能不一样，请指明你看到问题的那个。
+      multiple: true
+      options:
+        - 开发服务器（bun run dev）
+        - 生产构建产物（bun run build + bun run preview）
+        - 静态生成（bun run generate）
+        - 部署上线后的站点
+    validations:
+      required: true
+
+  - type: input
+    id: nuxt-version
+    attributes:
+      label: Nuxt 版本
+      description: package.json 里 nuxt 的版本，或 bunx nuxi info 输出里的那一段。
+      placeholder: 4.5.2
+    validations:
+      required: true
+
+  - type: input
+    id: runtime-version
+    attributes:
+      label: Node.js 与 Bun 版本
+      description: node -v 与 bun -v 的输出。
+      placeholder: node v24.11.0 / bun 1.4.2
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: 浏览器与版本
+      description: 涉及样式、交互、查看器或图表的问题必须填；纯服务端的问题写「不涉及」。
+      placeholder: Chrome 141 / Safari 18.4 / 不涉及
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 相关模块
+      description: 判断问题可能落在哪一块，可多选。
+      multiple: true
+      options:
+        - 图片管线（assets/media、modules/media、public/media）
+        - Markdown 渲染与代码块（server/utils/markdown）
+        - 公式与图表（KaTeX、Mermaid、PlantUML）
+        - 照片查看器
+        - 图表查看器
+        - 排版与设计令牌（app/assets/css/main.css）
+        - 合集与标签
+        - 相册
+        - 内容 API（/api/posts、/api/collections）
+        - RSS（/feed.xml）
+        - 构建与配置（nuxt.config.ts、blog.config.ts、app/app.config.ts）
+        - 不确定
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: related
+    attributes:
+      label: 与这两块的关系
+      description: 图片管线和 Markdown 渲染最容易出环境相关的问题，勾一下能省一轮来回。
+      options:
+        - label: 与图片管线有关（图片不显示、格式不对、压缩后糊了、构建时卡住）
+        - label: 与 Markdown 渲染有关（代码块、提醒框、公式、图表）
+        - label: 与两者都无关
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 报错与日志
+      description: 终端输出、浏览器控制台报错。内容长就用代码块包起来。
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: minimal-repro
+    attributes:
+      label: 最小复现材料
+      description: 触发的 Markdown 片段、frontmatter，或改过的配置项。贴片段，不要贴整个项目。
+      render: markdown
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前自查
+      options:
+        - label: 搜索过已有 issue，没有重复
+        - label: 问题在最新的 main 上仍然存在，不是我本地改坏的
+        - label: 这是模板本身的问题（我自己站点的配置、内容与部署问题不在此列）

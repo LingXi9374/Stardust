@@ -1,0 +1,2 @@
+# 关掉空白 issue：所有反馈都走上面三个表单，免得漏掉版本、复现步骤这些必要信息。
+blank_issues_enabled: false

@@ -1,0 +1,352 @@
+@import 'tailwindcss';
+@import './content.css';
+
+/* ══════════════════════════════════════════════════════════════════════
+   暗色模式：由挂到 <html> 的 .dark 类驱动（与系统偏好解耦，便于手动切换）
+   ══════════════════════════════════════════════════════════════════════ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ────────────────────────────────────────────────────────────────────
+     ① 锁定配色 —— 使用者个人爱好选择的三个色值
+     ⚠ 请勿修改。整套模板的视觉识别建立在这三个值之上。
+     ──────────────────────────────────────────────────────────────────── */
+  --color-accent: #87c5d1; /* 前景色 Foreground */
+  --color-canvas: #e9feff; /* 背景色 Background */
+  --color-sidebar: #cee9ee; /* 侧栏色 Sidebar      */
+
+  /* ────────────────────────────────────────────────────────────────────
+     ② 由锁定三色派生的表面色（同色相，用于卡片 / 悬停 / 描边）
+     ──────────────────────────────────────────────────────────────────── */
+  --color-card: #ddf1f5;
+  --color-card-hover: #d1ebf1;
+  --color-accent-deep: #5aa6b5; /* 强调色的可交互加深态 */
+  --color-accent-soft: #b2d9e1;
+  --color-line: #bbe0e8;
+
+  /* ────────────────────────────────────────────────────────────────────
+     ③ 文字阶 —— 由前景色 #87c5d1 同色相推导的加深序列
+     原始 #87c5d1 on #e9feff 仅 1.84:1，无法承载正文（AGENTS.md 4.4 要求 ≥4.5:1）。
+     下列色值均已实测，标记为各自的最小对比度。
+     ──────────────────────────────────────────────────────────────────── */
+  --color-ink-strong: #17414d; /* 标题        10.6:1 on canvas */
+  --color-ink: #2c6473; /* 正文         6.3:1 on canvas */
+  --color-ink-soft: #356b79; /* 次要/导航    5.7 canvas · 5.1 card · 4.7 sidebar */
+
+  /* ────────────────────────────────────────────────────────────────────
+     ④ 版式尺度与度量
+     ──────────────────────────────────────────────────────────────────── */
+  --font-sans:
+    'Poppins', 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Noto Sans SC',
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono:
+    'JetBrains Mono', 'Cascadia Code', ui-monospace, 'SFMono-Regular', Menlo, Consolas,
+    'Liberation Mono', monospace;
+
+  --spacing-sidebar: 17.5rem;
+  --spacing-gutter: 2.75rem;
+
+  --text-nav: 1.125rem;
+  --text-nav--line-height: 1.4;
+  --text-codename: 2.25rem;
+  --text-codename--line-height: 1.15;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.5;
+  --text-reading: 1.125rem; /* 正文 18px（AGENTS.md 4.3） */
+  --text-reading--line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   暗色令牌：由同一色相家族推导，非浅色值的机械反转（AGENTS.md 4.9）
+   强调色 #87c5d1 在暗底上对比度 7.9:1，故保持不变。
+   ══════════════════════════════════════════════════════════════════════ */
+.dark {
+  --color-canvas: #0f2a30;
+  --color-sidebar: #15343c;
+  --color-card: #1a3d46;
+  --color-card-hover: #214a55;
+  --color-accent-deep: #a5d7e0;
+  --color-accent-soft: #2b5a66;
+  --color-line: #27505a;
+
+  --color-ink-strong: #eaf7fa;
+  --color-ink: #cbe6ec;
+  --color-ink-soft: #a7cdd6;
+
+  color-scheme: dark;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   基础层
+   ══════════════════════════════════════════════════════════════════════ */
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: #0b2b33;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-deep);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  /* 内容优先：读者视运动为干扰（AGENTS.md 4.7） */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* ── 图片加载提示：扫光骨架屏 ── */
+  .media-skeleton {
+    background-color: var(--color-card);
+    background-image: linear-gradient(
+      100deg,
+      transparent 25%,
+      var(--color-card-hover) 42%,
+      var(--color-card-hover) 58%,
+      transparent 75%
+    );
+    background-size: 240% 100%;
+    background-repeat: no-repeat;
+    animation: media-shimmer 1.35s linear infinite;
+  }
+
+  /* ── 点状分隔线（Home 页 Codename 下方） ── */
+  .rule-dotted {
+    height: 4px;
+    background-image: radial-gradient(circle, var(--color-accent) 1.5px, transparent 1.6px);
+    background-size: 9px 4px;
+    background-repeat: repeat-x;
+  }
+
+  /* ── 阅读列：66 字符度量 + 长行行高（AGENTS.md 4.1 / 4.2） ── */
+  .reading-column {
+    max-width: 65ch;
+    font-size: var(--text-reading);
+    line-height: 1.6;
+    color: var(--color-ink);
+  }
+
+  .reading-column > * + * {
+    margin-top: 1.4em;
+  }
+
+  .reading-column p {
+    text-wrap: pretty;
+  }
+
+  .reading-column h2 {
+    margin-top: 2.4em;
+    margin-bottom: 0.6em;
+    font-size: 1.5rem;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-ink-strong);
+    scroll-margin-top: 5rem;
+  }
+
+  .reading-column h3 {
+    margin-top: 2em;
+    margin-bottom: 0.5em;
+    font-size: 1.1875rem;
+    line-height: 1.25;
+    font-weight: 600;
+    color: var(--color-ink-strong);
+    scroll-margin-top: 5rem;
+  }
+
+  .reading-column h2 + *,
+  .reading-column h3 + * {
+    margin-top: 0;
+  }
+
+  .reading-column a {
+    color: var(--color-ink-strong);
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+
+  .reading-column a:hover {
+    text-decoration-color: var(--color-accent-deep);
+  }
+
+  .reading-column strong {
+    font-weight: 600;
+    color: var(--color-ink-strong);
+  }
+
+  .reading-column ul,
+  .reading-column ol {
+    padding-left: 1.35em;
+  }
+
+  .reading-column ul {
+    list-style: disc;
+  }
+
+  .reading-column ol {
+    list-style: decimal;
+  }
+
+  .reading-column li + li {
+    margin-top: 0.4em;
+  }
+
+  .reading-column li::marker {
+    color: var(--color-accent-deep);
+  }
+
+  .reading-column blockquote {
+    border-left: 3px solid var(--color-accent);
+    padding-left: 1.1em;
+    color: var(--color-ink-soft);
+    font-style: italic;
+  }
+
+  .reading-column hr {
+    border: 0;
+    border-top: 1px solid var(--color-line);
+    margin-top: 2.5em;
+  }
+
+  .reading-column :not(pre) > code {
+    background-color: var(--color-card);
+    border-radius: 0.35rem;
+    padding: 0.15em 0.4em;
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    color: var(--color-ink-strong);
+  }
+
+  /* 代码块：同时支持水平滚动与键盘聚焦（AGENTS.md 4.6） */
+  .reading-column pre {
+    overflow-x: auto;
+    padding: 1.15rem 1.25rem;
+    border-radius: 0.875rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    line-height: 1.65;
+    tab-size: 2;
+  }
+
+  .reading-column pre:focus-visible {
+    outline-offset: 0;
+  }
+
+  .reading-column table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+
+  .reading-column th,
+  .reading-column td {
+    border-bottom: 1px solid var(--color-line);
+    padding: 0.5em 0.75em;
+    text-align: left;
+  }
+
+  .reading-column th {
+    color: var(--color-ink-strong);
+    font-weight: 600;
+  }
+
+  .reading-column img {
+    border-radius: 0.875rem;
+  }
+
+  @media (max-width: 767px) {
+    .reading-column {
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   页面切换：沉入 / 浮出
+
+   旧页向下沉、新页自下方浮起。`mode="out-in"` 让两者不重叠——
+   重叠需要给离场元素绝对定位，长文会瞬间脱离文档流、页面高度跳一下。
+
+   时长短是刻意的：导航反馈要「快到来不及注意」，而不是一段表演。
+   AGENTS.md 4.7 说内容页应避免动效，这里是按需求保留的最小剂量：
+   只动 transform 与 opacity（都在合成器上），位移 12px 以内。
+   ══════════════════════════════════════════════════════════════════════ */
+.page-enter-active {
+  transition: opacity 200ms ease, transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.page-leave-active {
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+/* 自下方浮出 */
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+/* 向下沉入 */
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* 读者关掉动效时不要有任何位移与淡入 */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active {
+    transition: none;
+  }
+
+  .page-enter-from,
+  .page-leave-to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   图片骨架屏的扫光动画（@keyframes 不参与层叠，放在 layer 之外）
+   ══════════════════════════════════════════════════════════════════════ */
+@keyframes media-shimmer {
+  from {
+    background-position: 160% 0;
+  }
+
+  to {
+    background-position: -60% 0;
+  }
+}

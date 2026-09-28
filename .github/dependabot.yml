@@ -1,0 +1,38 @@
+# 这个文件是**纯注释**。GitHub 读到的是一份空配置，所以不会开启依赖更新、
+# 不会自动开 PR、也不会定时跑任何东西。模板仓库保持这个状态就好。
+#
+# 想启用 Dependabot 版本更新：把下面整块取消注释，再按自己的节奏调整频率与分组。
+#
+# version: 2
+# updates:
+#   # 项目用 Bun，锁文件是 bun.lock，所以生态选 bun 而不是 npm
+#   - package-ecosystem: bun
+#     directory: "/"
+#     schedule:
+#       interval: weekly
+#       day: monday
+#     open-pull-requests-limit: 5
+#     commit-message:
+#       prefix: chore(deps)
+#       include: scope
+#     groups:
+#       nuxt:
+#         patterns:
+#           - "nuxt"
+#           - "@nuxt/*"
+#       dev-dependencies:
+#         dependency-type: development
+#
+#   # workflows 里用到的 action
+#   - package-ecosystem: github-actions
+#     directory: "/"
+#     schedule:
+#       interval: monthly
+#     commit-message:
+#       prefix: ci
+#
+# 启用后记得同时把 .github/workflows/ci.yml 的触发器改成 push / pull_request，
+# 否则依赖 PR 上不会有任何自动检查。
+#
+# 如果哪天 GitHub 对空配置报错，直接删掉本文件即可：它现在不承担任何功能，
+# 需要时再从 git 历史里把这份注释取回来。
