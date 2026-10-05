@@ -100,6 +100,30 @@ PlantUML 的图表源码会随 URL 发给这个服务。介意的话换自建实
 | `admonitions` | boolean | `true` | 关闭后提醒框退回普通引用块 |
 | `admonitionsColorful` | boolean | `false` | 开启后按语义着色（note 蓝 / tip 绿 / warning 黄 / danger 红），会引入色板外的颜色 |
 
+### comments
+
+| 字段 | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `enabled` | boolean | `true` | 评论总开关。关掉后文章页不渲染评论区，`@giscus/vue` 也不会被加载，不留多余请求 |
+| `heading` | string | `'评论'` | 评论区标题 |
+| `giscus.repo` | `` `${string}/${string}` `` | — | 评论所在仓库。**建站时必须替换** |
+| `giscus.repoId` | string | `''` | 仓库 ID |
+| `giscus.category` | string | `'Announcements'` | Discussion 分类名 |
+| `giscus.categoryId` | string | `''` | 分类 ID |
+| `giscus.mapping` | `'pathname'` 等 | `'pathname'` | 页面与 Discussion 的映射方式 |
+| `giscus.strict` | `'0' \| '1'` | `'0'` | `1` = 只接受对该仓库有权限的人发起新讨论 |
+| `giscus.reactionsEnabled` | `'0' \| '1'` | `'1'` | 是否显示表情回应 |
+| `giscus.emitMetadata` | `'0' \| '1'` | `'0'` | 是否把讨论元数据发给父页面 |
+| `giscus.inputPosition` | `'top' \| 'bottom'` | `'top'` | 评论输入框在列表上方还是下方 |
+| `giscus.lang` | string | `'zh-CN'` | 界面语言 |
+| `giscus.loading` | `'lazy' \| 'eager'` | `'lazy'` | `lazy` 等滚动到评论区附近才加载 iframe |
+| `giscus.theme.light` / `.dark` | string | 见下 | 自定义主题，相对站点根的路径 |
+| `giscus.theme.fallbackLight` / `.fallbackDark` | string | `'light'` / `'dark_dimmed'` | 站点不是 https 时退回的 giscus 内置主题名 |
+
+`repo` / `repoId` / `categoryId` 不要手写——去 <https://giscus.app/zh-CN> 填好仓库，页面会直接把这三个值生成出来，照抄即可。没填全时文章页不会渲染评论区，而是显示一条指向该页面的提示，不会给读者看到一个报错的 iframe。
+
+`theme.light` 与 `theme.dark` 会被拼成绝对 https 地址再交给 giscus。完整的配置流程与那两个主题文件怎么改，见[评论](comments.md)。
+
 ## app/app.config.ts
 
 改动这个文件不需要动组件。
@@ -168,5 +192,6 @@ PlantUML 的图表源码会随 URL 发给这个服务。介意的话换自建实
 | `GET /api/collections` | 全部合集，按 `order` 排序 |
 | `GET /api/collections/:slug` | 单个合集；不存在返回 404 |
 | `GET /api/site-info` | 构建信息与聚合统计，供 `/statistics` 使用 |
+| `GET /api/search?q=<查询>&limit=<条数>` | 站内搜索，范围是全部文章的标题与正文；查询过短时返回空结果 |
 
 筛选在服务端完成，子页面只取自己需要的数据，不会把全量列表传给客户端。合集名随文章摘要一起下发（`collectionName`），详情页不必再查一次合集列表。

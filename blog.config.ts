@@ -299,3 +299,119 @@ export const markdown: BlogMarkdownConfig = {
   admonitions: true,
   admonitionsColorful: false,
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   评论：giscus
+   ══════════════════════════════════════════════════════════════════════ */
+
+export interface BlogGiscusConfig {
+  /**
+   * 评论所在的仓库，形如 `owner/name`。
+   *
+   * 去 https://github.com/apps/giscus 给仓库装上 giscus App，
+   * 然后到 https://giscus.app/zh-CN 填仓库名，页面会把下面这几个值
+   * 直接生成给你——**照抄即可，不要手写**。
+   */
+  repo: string
+
+  /** 仓库 ID。在 giscus.app 上配置时会自动填出来。 */
+  repoId: string
+
+  /** Discussion 分类名，例如 `Announcements`。 */
+  category: string
+
+  /** 分类 ID。同样由 giscus.app 生成。 */
+  categoryId: string
+
+  /**
+   * 页面与 Discussion 的映射方式。
+   *
+   * 本站文章 URL 是 `/posts/<slug>`，用 `pathname` 最直观：
+   * 一个路径一个讨论串，改标题不会断开已有评论。
+   */
+  mapping: 'url' | 'title' | 'og:title' | 'specific' | 'number' | 'pathname'
+
+  /** `1` = 只接受「用 GitHub 登录且对该仓库有权限」的人发起新讨论。 */
+  strict: '0' | '1'
+
+  /** 是否显示表情回应。 */
+  reactionsEnabled: '0' | '1'
+
+  /** 是否把讨论的元数据发给父页面（用于自定义展示）。 */
+  emitMetadata: '0' | '1'
+
+  /** 评论输入框在列表上方还是下方。 */
+  inputPosition: 'top' | 'bottom'
+
+  /** 界面语言。 */
+  lang: string
+
+  /**
+   * iframe 的加载时机。`lazy` 会等滚动到评论区附近才加载——
+   * 一篇文章的读者可能根本不看评论，不该为它付出加载成本。
+   */
+  loading: 'lazy' | 'eager'
+
+  /**
+   * 自定义主题，相对 public 的路径。
+   *
+   * 这两个文件由 `bun scripts/build-giscus-theme.ts` 生成：
+   * 以 giscus 官方主题为底，把 82 个变量重着色到本站色板（官方主题是整体替换、
+   * 没有继承，所以变量一个都不能少）。
+   *
+   * 运行时会被拼成**绝对 https 地址**再交给 giscus——giscus 注入的 <link>
+   * 带 crossorigin="anonymous"，是跨域请求，所以还需要
+   * server/middleware/giscus-theme-cors.ts 补上 CORS 头。
+   */
+  theme: {
+    light: string
+    dark: string
+    /**
+     * 站点不是 https 时的回退主题（giscus 内置名）。
+     *
+     * 这不是偷懒：https 的 giscus.app 加载 http 的样式表属于混合内容，
+     * 浏览器直接拦截，所以本地开发环境用自定义主题**必然无效**，
+     * 只能退回内置主题。部署到 https 之后自动切回自定义主题。
+     */
+    fallbackLight: string
+    fallbackDark: string
+  }
+}
+
+export interface BlogCommentsConfig {
+  /**
+   * 评论总开关。关掉后文章页不渲染评论区，
+   * `@giscus/vue` 也不会被加载——不留任何多余请求。
+   */
+  enabled: boolean
+
+  /** 文章页评论区的标题。 */
+  heading: string
+
+  giscus: BlogGiscusConfig
+}
+
+export const comments: BlogCommentsConfig = {
+  enabled: true,
+  heading: '评论',
+  giscus: {
+    // ↓↓↓ 建站时替换成自己的仓库信息（giscus.app 会直接生成这几个值）↓↓↓
+    repo: 'your-name/your-repo',
+    repoId: '',
+    category: 'Announcements',
+    categoryId: '',
+    mapping: 'pathname',
+    strict: '0',
+    reactionsEnabled: '1',
+    emitMetadata: '0',
+    inputPosition: 'top',
+    lang: 'zh-CN',
+    loading: 'lazy',
+    theme: {
+      light: '/giscus/preferred_color_scheme.css',
+      dark: '/giscus/preferred_color_scheme_dark.css',
+      fallbackLight: 'light',
+      fallbackDark: 'dark_dimmed',
+    },
+  },
+}

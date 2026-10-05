@@ -1,7 +1,14 @@
 import MarkdownIt from 'markdown-it'
 import type { Env, MarkdownIt as MarkdownItInstance, RendererRule, Token } from 'markdown-it'
 import KatexPlugin from '@vscode/markdown-it-katex'
-import { createHighlighter, type Highlighter } from 'shiki'
+import {
+  bundledLanguages,
+  bundledLanguagesAlias,
+  createHighlighter,
+  type Highlighter,
+  type LanguageRegistration,
+} from 'shiki'
+import carbonGrammar from '../../assets/carbon.tmLanguage.json'
 import type { TocHeading } from '~~/shared/types/content'
 import { diagrams as diagramConfig } from '~~/blog.config'
 import { registerBlockExtensions, resetCodeGroupSeq } from './blocks'
@@ -70,6 +77,14 @@ const LANGS = [
   'yaml',
 ] as const
 
+/** Shiki 的特殊语言：不做语法解析，但可以作为 lang 传给高亮器 */
+const SPECIAL_LANGS = new Set(['ansi', 'plaintext', 'txt', 'text', 'plain'])
+
+/** 这个名字 Shiki 认得吗——内置语言、别名，或特殊语言 */
+function isBundledLanguage(lang: string): boolean {
+  return lang in bundledLanguages || lang in bundledLanguagesAlias || SPECIAL_LANGS.has(lang)
+}
+
 const LANG_ALIASES: Record<string, string> = {
   js: 'javascript',
   jsx: 'tsx',
@@ -97,13 +112,34 @@ let rendererPromise: Promise<MarkdownItInstance> | null = null
 /**
  * 建高亮器：先加载蓝本主题，再由它派生亮暗两套并注册进去。
  * 两套配色的色相一一对应，切换主题时语法高亮不会「换一套」。
+ *
+ * 注意 LANGS 里**不能**再出现 'carbon' 这个字符串。Carbon 不在 Shiki 内置语法
+ * 里，是靠下面这个 TextMate 语法对象注册的；字符串形式会被 Shiki 拿去打包里找，
+ * 找不到就直接抛错——而 createHighlighter 建不起来意味着**所有文章页 500**。
  */
 async function createThemedHighlighter(): Promise<Highlighter> {
-  const highlighter = await createHighlighter({
-    themes: [BASE_THEME],
-    langs: [...LANGS],
-  })
+  const customGrammars = [carbonGrammar as unknown as LanguageRegistration]
 
+  const build = (langs: Array<string | LanguageRegistration>): Promise<Highlighter> =>
+    createHighlighter({ themes: [BASE_THEME], langs })
+
+  try {
+    const highlighter = await build([...LANGS, ...customGrammars])
+    return await withThemes(highlighter)
+  } catch (error) {
+    // Shiki 会随版本增删内置语言，语言表里任何一个名字失效都会让整站渲染不了。
+    // 退一步：只保留打包里确实有的，宁可少一种高亮也不能让文章页全挂。
+    const available = LANGS.filter((lang) => isBundledLanguage(lang))
+    console.warn(
+      `[markdown] Shiki 语言表里有不可用的名字，已跳过并降级重建：${(error as Error).message}`,
+    )
+    const highlighter = await build([...available, ...customGrammars])
+    return await withThemes(highlighter)
+  }
+}
+
+/** 装上由蓝本主题派生出的亮暗两套 */
+async function withThemes(highlighter: Highlighter): Promise<Highlighter> {
   const { light, dark } = buildThemes(highlighter.getTheme(BASE_THEME))
 
   // loadTheme 是异步的，漏掉 await 会让后面的 codeToTokens 找不到主题

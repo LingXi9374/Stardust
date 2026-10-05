@@ -115,7 +115,13 @@ function isActive(to: string): boolean {
       </NuxtLink>
     </nav>
 
-    <div class="mt-auto flex items-end justify-between gap-3">
+    <!--
+      站内搜索。结果面板向上展开，会盖住导航——这是有意的：
+      搜索框钉在侧栏底部，向下展开只能被视口下边缘切掉。
+    -->
+    <BlogSiteSearch />
+
+    <div class="mt-auto flex items-end justify-between gap-3 pt-8">
       <p class="text-meta text-ink-soft">© {{ site.startYear }}–{{ year }}, {{ site.name }}</p>
 
       <button

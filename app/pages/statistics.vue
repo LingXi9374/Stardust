@@ -81,7 +81,7 @@ usePageSeo({
       <h2 class="text-meta font-medium uppercase tracking-[0.12em] text-ink-soft">站点统计</h2>
 
       <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        <BlogStatTile label="文章" :value="stats?.posts ?? 0" tone="solid" />
+        <BlogStatTile label="文章" :value="stats?.posts ?? 0" />
         <BlogStatTile label="合集" :value="stats?.collections ?? 0" />
         <BlogStatTile label="标签" :value="stats?.tags ?? 0" />
         <BlogStatTile
@@ -95,7 +95,6 @@ usePageSeo({
           unit="天"
           :hint="`自 ${stats?.since ?? '—'}`"
           :span="2"
-          tone="solid"
         />
         <BlogStatTile
           label="最后活动"

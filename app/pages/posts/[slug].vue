@@ -134,6 +134,9 @@ useSeoMeta({
             </NuxtLink>
           </div>
         </nav>
+
+        <!-- 评论区放在上一篇 / 下一篇之后：读者先看完内容与导航，再决定要不要参与讨论 -->
+        <BlogPostComments />
       </article>
     </div>
 

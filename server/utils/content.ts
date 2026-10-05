@@ -92,21 +92,22 @@ async function scanPostFiles(): Promise<PostFile[]> {
 }
 
 function buildSummary(
-  file: PostFile,
+  slug: string,
+  collection: string,
   data: Frontmatter,
   body: string,
   names: Map<string, string>,
 ): PostSummary {
   return {
-    slug: file.slug,
-    title: asString(data.title) || file.slug,
+    slug,
+    title: asString(data.title) || slug,
     description: asString(data.description),
     date: asString(data.date),
     // 没写 updated 就留空，由展示层决定退回用 date
     updated: asString(data.updated),
     // 所属合集由文件夹决定，frontmatter 里的 collection 字段不再参与
-    collection: file.collection,
-    collectionName: file.collection ? (names.get(file.collection) ?? file.collection) : '',
+    collection,
+    collectionName: collection ? (names.get(collection) ?? collection) : '',
     tags: asArray(data.tags),
     pinned: data.pinned === true,
     cover: asString(data.cover),
@@ -125,18 +126,41 @@ function comparePosts(a: PostSummary, b: PostSummary): number {
   return b.date.localeCompare(a.date)
 }
 
-export async function listPosts(): Promise<PostSummary[]> {
-  const [files, names] = await Promise.all([scanPostFiles(), collectionNames()])
+export interface RawPost {
+  slug: string
+  /** 所属合集（content/posts 下的文件夹名）；空字符串表示未归档 */
+  collection: string
+  data: Frontmatter
+  /** 未经渲染的 Markdown 正文 */
+  body: string
+}
 
-  const posts = await Promise.all(
+/**
+ * 读出全部文章及其解析后的 frontmatter 与原始正文。
+ *
+ * 单独导出是为了给搜索索引复用：那一层需要正文纯文本，但不该重新实现一遍
+ * 目录扫描与 frontmatter 解析。listPosts() 也走这里。
+ */
+export async function readAllPosts(): Promise<RawPost[]> {
+  const files = await scanPostFiles()
+
+  return Promise.all(
     files.map(async (file) => {
       const raw = await readFile(file.path, 'utf8')
       const { data, body } = parseFrontmatter(raw)
-      return buildSummary(file, data, body, names)
+      return { slug: file.slug, collection: file.collection, data, body }
     }),
   )
+}
 
-  return posts.sort(comparePosts)
+export async function listPosts(): Promise<PostSummary[]> {
+  const [posts, names] = await Promise.all([readAllPosts(), collectionNames()])
+
+  const summaries = posts.map((post) =>
+    buildSummary(post.slug, post.collection, post.data, post.body, names),
+  )
+
+  return summaries.sort(comparePosts)
 }
 
 export async function getPost(slug: string): Promise<PostDetail | null> {
@@ -159,7 +183,7 @@ export async function getPost(slug: string): Promise<PostDetail | null> {
   const names = await collectionNames()
 
   return {
-    ...buildSummary(file, data, body, names),
+    ...buildSummary(file.slug, file.collection, data, body, names),
     html,
     headings,
     prev: previous ? toNeighbour(previous) : null,

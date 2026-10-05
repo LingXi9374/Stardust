@@ -18,3 +18,10 @@ export function collectionsEndpoint(): string {
 export function collectionEndpoint(slug: string): string {
   return `/api/collections/${encodeURIComponent(slug)}`
 }
+
+/** 站内搜索。查询词在服务端切分与匹配，见 server/utils/search.ts。 */
+export function searchEndpoint(query: string, limit?: number): string {
+  const params = new URLSearchParams({ q: query })
+  if (limit !== undefined) params.set('limit', String(limit))
+  return `/api/search?${params.toString()}`
+}

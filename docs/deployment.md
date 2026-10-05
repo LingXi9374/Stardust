@@ -64,8 +64,11 @@ PlantUML 图表在渲染阶段编码成 `<server>/svg/<encoded>` 这样的地址
 | PlantUML | 编码后的图表地址发往 `diagrams.plantuml.server` | 渲染含 plantuml 代码块的文章时 |
 | GitHub 卡片 | `api.github.com/repos/:owner/:name` | 渲染含 `::github{}` 的文章时，进程内缓存 30 分钟 |
 | Mermaid | 无出站请求，渲染器随站点一起分发 | — |
+| giscus | iframe 指向 `giscus.app`，评论数据存在你自己的 GitHub 仓库 | 文章页滚动到评论区附近时（`loading: 'lazy'`） |
 
-三项都可以在 `blog.config.ts` 里单独关掉或改指向自建服务。
+前三项都可以在 `blog.config.ts` 里单独关掉或改指向自建服务。
+
+**评论要求站点走 https。** giscus 的 iframe 来自 `https://giscus.app`，它会去取本站的自定义主题 CSS；站点是 http 时这属于混合内容，浏览器直接拦截，主题会退回内置配色。所以部署时务必配好 TLS，见[评论](comments.md)。
 
 ## 安全边界
 

@@ -13,6 +13,8 @@
 - 代码块（Shiki 双主题）、提醒框、剧透、图片网格、GitHub 仓库卡片
 - KaTeX 在服务端渲染公式，Mermaid 在浏览器端按需渲染，PlantUML 编码成服务端 SVG 地址
 - 文章图片查看器与图表查看器
+- giscus 评论（GitHub Discussions），主题跟着站点色板走，明暗自动切换
+- 侧栏站内搜索，范围是全部文章的标题与正文，`⌘K` / `Ctrl+K` 聚焦
 - 正文与标题对比度实测 6.3:1 与 10.6:1，最紧的一处次要文字 4.68:1，均达到 WCAG 2.2 AA；代码块与图表配色另有校验脚本
 
 技术栈：Nuxt 4.5、Vue 3.5、Vite 8、Tailwind CSS 4.3、TypeScript 5.9（严格模式）、Shiki 4、KaTeX 0.18、Mermaid 12、sharp 0.35、Font Awesome 7。
@@ -50,7 +52,8 @@ bun run dev
 2. 改 `blog.config.ts`：SEO 标题与描述、`siteMeta` 里的建站日期与许可协议。正式建站时把 `seo.indexable` 改成 `true`。
 3. 删掉 `content/posts/showcase/` 下的功能示例，写自己的第一篇，格式见[写文章](docs/writing.md)。
 4. 用 `assets/media/` 里自己的图片替换示例素材，压缩参数在 `blog.config.ts` 的 `media` 段，见[图片管线](docs/media-pipeline.md)。
-5. 部署时设好 `NUXT_PUBLIC_SITE_URL`，见[部署](docs/deployment.md)。
+5. 想开评论就在 `blog.config.ts` 的 `comments.giscus` 里填上仓库与分类 ID，见[评论](docs/comments.md)；不想用就把 `comments.enabled` 设成 `false`。
+6. 部署时设好 `NUXT_PUBLIC_SITE_URL`，见[部署](docs/deployment.md)。
 
 ## 页面
 
@@ -81,6 +84,7 @@ bun run dev
 | 代码块行号策略、终端语言、复制按钮、默认换行 | `blog.config.ts` 的 `codeBlocks` |
 | Mermaid / PlantUML 开关与服务地址 | `blog.config.ts` 的 `diagrams` |
 | 提醒框着色、GitHub 卡片 | `blog.config.ts` 的 `markdown` |
+| 评论开关、giscus 仓库与分类 | `blog.config.ts` 的 `comments`，见[评论](docs/comments.md) |
 | 站点对外 URL | 环境变量 `NUXT_PUBLIC_SITE_URL` |
 | 文章目录位置 | 环境变量 `NUXT_CONTENT_DIR`，默认 `content/posts` |
 
@@ -92,6 +96,7 @@ bun run dev
 app/                  客户端应用：pages / components / composables / plugins / layouts / assets/css
 content/posts/        文章；子文件夹即合集，标题与描述写在文件夹内的 _collection.md
 assets/media/         图片源文件（入库）
+assets/giscus/        giscus 自定义主题（由脚本生成，见[评论](docs/comments.md)）
 public/media/         avif / webp 产物（构建时生成，不入库）
 modules/media/        图片管线：扫描、压缩、清单注入、开发期监听
 server/               Nitro 服务端：API、RSS、Markdown 渲染
@@ -109,7 +114,8 @@ nuxt.config.ts        Nuxt 配置
 | [写文章](docs/writing.md) | frontmatter、合集规则、Markdown 扩展语法与代码块写法 |
 | [图片管线](docs/media-pipeline.md) | 源图到产物的流程、格式与质量换算、防盗链、相册素材 |
 | [设计系统](docs/design-system.md) | 排版参数、色板派生、对比度校验、代码与图表主题 |
-| [交互与查看器](docs/interactions.md) | 页面过渡、文章页浮动操作、照片查看器、图表查看器 |
+| [交互与查看器](docs/interactions.md) | 页面过渡、文章页浮动操作、照片查看器、图表查看器、侧栏搜索 |
+| [评论](docs/comments.md) | giscus 配置、自定义主题的生成与 CORS 处理、https 前提 |
 | [部署](docs/deployment.md) | 环境变量、SSR 与静态生成、PlantUML 自建、出站请求 |
 
 ## 部署
@@ -135,7 +141,9 @@ node .output/server/index.mjs
 - 文章只认小写 `.md`，只看 `content/posts/` 一层子文件夹，合集里再套目录不会被收录。
 - 文件名要用 ASCII。详情页对 slug 做白名单校验，中文或空格文件名能进列表，点开是 404。
 - 列表不分页，文章多了 `/contents` 会很长。
-- 站内没有搜索与评论，模板也不打算加：这两件事各有更合适的现成方案，塞进来会让模板变重。
+- 搜索是**子串匹配**：不分词、不纠错，查询按空白切词且**每个词都要出现**，词给多了反而搜不到。规模上去之后应换成专门的检索方案。
+- 评论用 giscus，需要读者有 GitHub 账号；`blog.config.ts` 的 `comments.giscus` 没填全时评论区不渲染，只显示一条配置提示。
+- giscus 的自定义主题要求站点走 **https**。http 下（本地开发就是）会退回内置主题，原因见[评论](docs/comments.md)。
 - `bun run typecheck` 会打印两条 `vue-router/volar/sfc-route-blocks` 解析警告，见[快速开始](#快速开始)。
 
 ## 贡献
